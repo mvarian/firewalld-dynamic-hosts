@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-configuration=`cat dynhosts.json`
+configuration=`cat /opt/fwdynhosts/dynhosts.json`
 
 items=$(echo "$configuration" | jq -c -r '.[]')
 for item in ${items[@]}; do
