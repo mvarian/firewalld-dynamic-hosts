@@ -14,7 +14,7 @@ This is a simple approach to effectively utilize hostnames in firewalld.
 - `sudo su`
 - `chmod 700 -R /opt/fwdynhosts/*`
 - `chown root:root -R /opt/fwdynhosts/*`
-- `yum install -y jq`
+- `yum install -y jq bind-utils`
 - `crontab -e`
 
 
