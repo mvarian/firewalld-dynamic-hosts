@@ -1,0 +1,12 @@
+[
+	{
+		"zone" : "trusted",
+		"ips": ["127.0.0.1"],
+		"hostnames": ["example.com","archive.org"]
+	},
+	{
+		"zone" : "public",
+		"ips": ["127.0.0.1"],
+		"hostnames": ["example.com","archive.org"]
+	}
+]
