@@ -8,7 +8,7 @@ Match the variant you are editing. Do not invent a shared library for two short 
 - Resolve a hostname the way both scripts already do: `host`, then `awk '/has address/ { print $4 }'`, then `head -n1`.
 - Print the firewall command, then run it. Cron stdout is the only trace these scripts have.
 - Static addresses stay in `ips`. Hostnames stay in `hostnames`. Do not pre-resolve hostnames into the example file.
-- The Debian nftables table name stays `family="firewall"`. The set name stays the JSON `set` field.
+- The Debian nftables table name stays `family="firewall"`. The set name is the JSON `set` field, or `zone` when `set` is absent.
 
 ## Antipatterns
 

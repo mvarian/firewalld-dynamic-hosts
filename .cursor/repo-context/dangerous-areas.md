@@ -14,11 +14,9 @@ Do not change "replace the whole list" into a merge inside either script. That c
 
 ## Debian rewrite of `/etc/nftables.conf`
 
-`debian/fwdynhosts.sh` overwrites `/etc/nftables.conf` on every run: a `flush ruleset` header, then `nft list ruleset`. This persists the entire live ruleset, including rules this tool did not create. It also means a broken live ruleset becomes the file that will load on the next start.
+`debian-nft/fwdynhosts.sh` overwrites `/etc/nftables.conf` on every run. The file deletes and recreates `ip firewall` and `ip6 firewall` from `nft list table`. The next nftables load replaces those two tables with that snapshot.
 
-If `nft list ruleset` produces no output, the file is left as a flush with no rules. Loading that file clears the firewall.
-
-Do not point this write at a different path, and do not drop the dump, without a new decision entry. The Debian host has no other persistence step in this repo.
+If a list command prints nothing, the header still deletes that table on the next load and does not recreate it. Do not put `flush ruleset` or `nft list ruleset` back. That captures fail2ban and Docker, then removes them on the next load. See the decision "nftables.conf reloads only the firewall tables".
 
 ## Hostname to address
 

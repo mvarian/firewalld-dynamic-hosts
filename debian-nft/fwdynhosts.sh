@@ -5,8 +5,12 @@ family="firewall"
 
 echo "$configuration" | jq -c -r '.[]' | while read -r item; do	
 	#printf "$item\n\n"
-	nfset=`echo $item | jq -r ".set"`
-	nfcomment=`echo $item | jq -r ".comment"`
+	nfset=`echo $item | jq -r ".set // .zone // empty"`
+	nfcomment=`echo $item | jq -r ".comment // empty"`
+	if [ -z "$nfset" ]; then
+		echo "No set or zone name, skipping"
+		continue
+	fi
 
 	printf "Configuring Set: $nfset $nfcomment\n"
 
@@ -48,10 +52,12 @@ done
 printf "Reloading nftables..."
 cat << "EOF" > /etc/nftables.conf
 #!/usr/sbin/nft -f
-
-flush ruleset
-
+add table ip firewall
+delete table ip firewall
+add table ip6 firewall
+delete table ip6 firewall
 EOF
-nft list ruleset >> /etc/nftables.conf
+nft list table ip firewall >> /etc/nftables.conf
+nft list table ip6 firewall >> /etc/nftables.conf
 
 printf "Done.\n"

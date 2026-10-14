@@ -26,11 +26,11 @@ Observed from `centos/fwdynhosts.sh`, `debian-nft/fwdynhosts.sh`, `debian-ufw/fw
 
 - None of the scripts set `set -e`, `set -u`, or `set -o pipefail`. A failed `jq`, `host`, `firewall-cmd`, `nft`, or `ufw` does not stop the rest of the run. Each script ends with `printf "Done.\n"`, so cron sees success when that printf runs.
 - There is no lock. Overlapping runs can interleave removes and adds.
-- JSON keys differ by variant. CentOS objects use `zone`, `ips`, `hostnames`. Debian nftables objects use `set`, `comment`, `ips`, `hostnames`. UFW dynhosts objects use `zone`, `ips`, `hostnames`. UFW `zones.json` objects use `zone` and `rules` of `{ "port", "proto" }`. A missing `ips` or `hostnames` key makes `jq` fail for that expansion; the script does not abort on that failure.
+- JSON keys differ by variant. CentOS objects use `zone`, `ips`, `hostnames`. Debian nftables objects use `set` or `zone`, optional `comment`, `ips`, `hostnames`. The set name is `set` when present, otherwise `zone`. UFW dynhosts objects use `zone`, `ips`, `hostnames`. UFW `zones.json` objects use `zone` and `rules` of `{ "port", "proto" }`. A missing `ips` or `hostnames` key makes `jq` fail for that expansion; the script does not abort on that failure.
 
-## Debian persistence is the whole ruleset
+## Debian nftables persistence is two tables
 
-After the set loop, `debian-nft/fwdynhosts.sh` truncates `/etc/nftables.conf` to a `flush ruleset` header and appends `nft list ruleset`. The next nftables load restores whatever was live at the end of the run, not a hand-maintained config. Comments and ordering that existed only in the previous file are gone.
+After the set loop, `debian-nft/fwdynhosts.sh` rewrites `/etc/nftables.conf` so the next load deletes and recreates `ip firewall` and `ip6 firewall` only. Fail2ban and Docker tables are not in that file. Comments that existed only in the previous copy of those two tables are gone.
 
 The CentOS script does not do this. It uses `firewall-cmd --permanent` and one `--reload`.
 

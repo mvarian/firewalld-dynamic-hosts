@@ -6,6 +6,20 @@ Format: newest entry on top, heading `## YYYY-MM-DD - <short title>`. Each entry
 what was decided, what alternative was rejected, and why. Entries are never rewritten — a
 superseded decision gets a new entry that references the old one.
 
+## 2026-10-14 - nft set name falls back to zone
+
+`debian-nft/fwdynhosts.sh` reads `set` and, when that key is absent, `zone`. A missing name is skipped. The string `null` from `jq` was becoming a real set, so a file that only had `zone` never updated `management`.
+
+`set` remains the nftables name when both keys are present. One JSON object is still one set, and a later object with the same name replaces it.
+
+## 2026-10-14 - nftables.conf reloads only the firewall tables
+
+This supersedes the `flush ruleset` plus `nft list ruleset` persistence in "Resolve hostnames outside the firewall" below. `debian-nft/fwdynhosts.sh` still rewrites `/etc/nftables.conf` after updating set elements.
+
+The file deletes and recreates `ip firewall` and `ip6 firewall` only. Fail2ban (`inet f2b-table`) and Docker (`ip filter`, `ip nat`, and the ip6 equivalents) stay out of that file, so the next nftables load does not flush them or restore a stale copy.
+
+A full ruleset dump was rejected. It captures tables those daemons own, and `flush ruleset` removes them on the next load.
+
 ## 2026-10-14 - UFW zones are named in JSON
 
 This supersedes the public/private-only split in "UFW public rules and private rules" below. The rest of that entry still holds: discrete `ufw allow` rules, no ipset, no `/etc/nftables.conf` rewrite, `ufw reload` at the end, a failed lookup drops that hostname, and a rule missing `port` or `proto` is not added.
