@@ -1,0 +1,12 @@
+[
+	{
+		"zone": "public",
+		"ips": ["0.0.0.0/0"],
+		"hostnames": []
+	},
+	{
+		"zone": "management",
+		"ips": ["127.0.0.1","1.1.1.1"],
+		"hostnames": ["example.com","archive.org"]
+	}
+]

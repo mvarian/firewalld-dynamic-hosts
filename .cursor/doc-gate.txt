@@ -1,0 +1,19 @@
+# Required reading before writing, enforced by the global doc-gate hook.
+#
+# One rule per line:  <path-ere>|<doc>[,<doc>...]
+# The ERE is matched as (^|/)<pattern> against the write target (prefix match).
+# Cleared by a Read this session, or by an exact-string edit of the doc (Cursor skips
+# Read hooks on files already open in an editor). A wholesale Write, a Delete, a Grep,
+# and any refused call earn nothing. Blank lines and # ignored.
+#
+# Every doc named here must exist. A rule pointing at a missing file cannot be
+# satisfied and blocks that path permanently.
+#
+# Mirrors the table in .cursor/rules/doc-map.mdc. Keep the two in step.
+#
+# Verify a change with: bash ~/.cursor/hooks/selftest.sh
+
+debian-nft/|.cursor/repo-context/architecture-decisions.md,.cursor/repo-context/dangerous-areas.md,.cursor/repo-context/known-constraints.md,.cursor/repo-context/patterns-and-antipatterns.md
+debian-ufw/|.cursor/repo-context/architecture-decisions.md,.cursor/repo-context/dangerous-areas.md,.cursor/repo-context/known-constraints.md,.cursor/repo-context/patterns-and-antipatterns.md
+centos/|.cursor/repo-context/architecture-decisions.md,.cursor/repo-context/dangerous-areas.md,.cursor/repo-context/known-constraints.md,.cursor/repo-context/patterns-and-antipatterns.md
+README\.md|.cursor/repo-context/known-constraints.md,.cursor/repo-context/architecture-decisions.md

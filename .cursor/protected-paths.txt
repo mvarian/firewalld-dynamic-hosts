@@ -1,0 +1,11 @@
+# Files the agent may never write, enforced by the global protected-files hook.
+#
+# One POSIX ERE fragment per line, matched as (^|/)<pattern>$ against the target path.
+# Escape dots. Blank lines and # comments ignored.
+#
+# Verify a change with: bash ~/.cursor/hooks/selftest.sh
+#
+# No in-repo path is listed. The live allow-list is /opt/fwdynhosts/dynhosts.json on
+# the host (gitignored here). Debian also rewrites /etc/nftables.conf on the host.
+# Those files are not in this tree. The refresh scripts are the product, not a
+# frozen bootstrap file; locking them would block every future edit.

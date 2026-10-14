@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+# Project Read-Map
+
+Global doctrine is already loaded from `~/.cursor/rules/profile/`. The documents below
+are **not** loaded — `AI_PROFILE/**` and `.cursor/repo-context/**` are never auto-read.
+Open them with the Read tool before writing code that touches the listed area.
+
+| Task touches | MUST read first |
+|---|---|
+| `centos/`, `debian-nft/`, or `debian-ufw/` refresh scripts, or a `dynhosts.json.example` / `zones.json.example` | `.cursor/repo-context/architecture-decisions.md`, `.cursor/repo-context/dangerous-areas.md`, `.cursor/repo-context/known-constraints.md`, `.cursor/repo-context/patterns-and-antipatterns.md` |
+| README install or operator behavior | `.cursor/repo-context/known-constraints.md`, `.cursor/repo-context/architecture-decisions.md` |
+
+`AI_PROFILE/languages/` has no shell guide. Do not borrow the php or powershell guides for these scripts.
+
+Project docs in `.cursor/repo-context/` outrank portable doctrine on conflict.

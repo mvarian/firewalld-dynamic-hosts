@@ -1,0 +1,35 @@
+---
+description: Delegate scoped work to named agents while controlling cost and preserving review.
+alwaysApply: true
+---
+# Model delegation and cost control
+
+The parent premium model primarily handles architecture, planning, coordination,
+escalation, and final review. Keep ambiguous diagnosis, architectural choices, and
+unresolved design decisions with the parent. Proactively use `implementer` for 
+well-understood, bounded implementation after the approach is settled; task size
+alone is not a reason to delegate. For repetitive, boilerplate, straightforward 
+work, use `mechanical`.  After substantial, architectural, or security-sensitive 
+changes, use `reviewer` for an independent read-only review; the parent evaluates 
+findings before fixes.
+
+Keep trivial edits local when delegation overhead exceeds the work. Give each agent
+a small, bounded task, relevant paths and context, concrete existing examples to
+follow, acceptance criteria, behaviors to preserve, and required checks. For bug
+fixes, require evidence of the cause before edits, rather than speculative patches.
+Avoid overlapping file ownership, duplicate exploration, recursive delegation, and
+unbounded retries. Stop and escalate after two unsuccessful fix attempts on the
+same issue, or immediately when architecture or requirements are unclear. The
+parent reassesses the evidence and approach before assigning more work.
+The parent remains accountable for integration, verification, and the final result.
+
+Honor user instructions and project-local constraints over these defaults. Agents
+must follow the same security, required-reading, protected-file, and consent rules.
+Delegation never grants permission to commit, push, deploy, or expand scope.
+
+Use the named agents' configured models. If an agent/model is unavailable or Cursor
+reports fallback, surface the limitation; do not silently substitute premium work
+at scale. Model selection is a preference, not a guaranteed spending cap. Keep
+prompts and result summaries focused and verify actual routing in Cursor.
+
+<!-- engineering-profile managed sha256=92998037f6ef833a18f8cb5ff5d2e837227994634c7b8699e0783d76ba44ddbf -->

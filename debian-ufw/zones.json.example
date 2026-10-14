@@ -1,0 +1,15 @@
+[
+	{
+		"zone": "public",
+		"rules": [
+			{ "port": "80", "proto": "tcp" },
+			{ "port": "443", "proto": "tcp" }
+		]
+	},
+	{
+		"zone": "management",
+		"rules": [
+			{ "port": "22", "proto": "tcp" }
+		]
+	}
+]
