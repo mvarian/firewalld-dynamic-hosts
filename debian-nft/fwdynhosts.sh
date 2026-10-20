@@ -21,7 +21,9 @@ echo "$configuration" | jq -c -r '.[]' | while read -r item; do
 	if [[ $(nft list sets ip | grep "$setsearch") ]]; then
 		echo "Set $nfset was found, purging set entries"
 		ip_elements=$(nft list set $family $nfset | awk '/{ /,/}/' | cut -d '=' -f 2)
-		nft delete element $family $nfset ${ip_elements}
+		if [[ -n "$ip_elements" ]]; then
+			nft delete element "$family" "$nfset" ${ip_elements}
+		fi
 	else
 		echo "No set $nfset found, creating set"
 		nft add set ip $family $nfset { type ipv4_addr\; comment \"$nfcomment\" \; }
