@@ -9,9 +9,9 @@ Open them with the Read tool before writing code that touches the listed area.
 
 | Task touches | MUST read first |
 |---|---|
-| `centos/`, `debian-nft/`, or `debian-ufw/` refresh scripts, or a `dynhosts.json.example` / `zones.json.example` | `.cursor/repo-context/architecture-decisions.md`, `.cursor/repo-context/dangerous-areas.md`, `.cursor/repo-context/known-constraints.md`, `.cursor/repo-context/patterns-and-antipatterns.md` |
+| `centos/`, `debian-nft/`, or `debian-ufw/` refresh scripts, or a `dynhosts.json.example` / `zones.json.example` | `.cursor/repo-context/architecture-decisions.md`, `.cursor/repo-context/dangerous-areas.md`, `.cursor/repo-context/known-constraints.md`, `.cursor/repo-context/patterns-and-antipatterns.md`, `AI_PROFILE/languages/shell/style.md`, `AI_PROFILE/languages/shell/patterns.md` |
 | README install or operator behavior | `.cursor/repo-context/known-constraints.md`, `.cursor/repo-context/architecture-decisions.md` |
 
-`AI_PROFILE/languages/` has no shell guide. Do not borrow the php or powershell guides for these scripts.
+The shell guide is general. Where it conflicts with this repo's constraints (no `set -e`, unquoted nft lines, no lock), the repo-context docs win.
 
 Project docs in `.cursor/repo-context/` outrank portable doctrine on conflict.

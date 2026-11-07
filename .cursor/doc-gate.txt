@@ -13,7 +13,7 @@
 #
 # Verify a change with: bash ~/.cursor/hooks/selftest.sh
 
-debian-nft/|.cursor/repo-context/architecture-decisions.md,.cursor/repo-context/dangerous-areas.md,.cursor/repo-context/known-constraints.md,.cursor/repo-context/patterns-and-antipatterns.md
-debian-ufw/|.cursor/repo-context/architecture-decisions.md,.cursor/repo-context/dangerous-areas.md,.cursor/repo-context/known-constraints.md,.cursor/repo-context/patterns-and-antipatterns.md
-centos/|.cursor/repo-context/architecture-decisions.md,.cursor/repo-context/dangerous-areas.md,.cursor/repo-context/known-constraints.md,.cursor/repo-context/patterns-and-antipatterns.md
+debian-nft/|.cursor/repo-context/architecture-decisions.md,.cursor/repo-context/dangerous-areas.md,.cursor/repo-context/known-constraints.md,.cursor/repo-context/patterns-and-antipatterns.md,AI_PROFILE/languages/shell/style.md,AI_PROFILE/languages/shell/patterns.md
+debian-ufw/|.cursor/repo-context/architecture-decisions.md,.cursor/repo-context/dangerous-areas.md,.cursor/repo-context/known-constraints.md,.cursor/repo-context/patterns-and-antipatterns.md,AI_PROFILE/languages/shell/style.md,AI_PROFILE/languages/shell/patterns.md
+centos/|.cursor/repo-context/architecture-decisions.md,.cursor/repo-context/dangerous-areas.md,.cursor/repo-context/known-constraints.md,.cursor/repo-context/patterns-and-antipatterns.md,AI_PROFILE/languages/shell/style.md,AI_PROFILE/languages/shell/patterns.md
 README\.md|.cursor/repo-context/known-constraints.md,.cursor/repo-context/architecture-decisions.md

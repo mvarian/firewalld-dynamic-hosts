@@ -6,6 +6,26 @@ Format: newest entry on top, heading `## YYYY-MM-DD - <short title>`. Each entry
 what was decided, what alternative was rejected, and why. Entries are never rewritten — a
 superseded decision gets a new entry that references the old one.
 
+## 2026-10-24 - CentOS run status for RMM
+
+`centos/fwdynhosts.sh` writes `$STATE_DIR/status.json` only from mutating modes (`--apply`, `--migrate-public-web --confirm`, `--rollback`, and `--refresh-cloudflare` with `--apply`) and only from the EXIT trap, so a failed run is recorded the same way as a successful one. `--status` is a read-only Nagios check (exit 0 OK, 1 WARNING, 2 CRITICAL, 3 UNKNOWN). Parsing cron stdout or mail for health was rejected because the RMM needs a stable machine-readable contract.
+
+## 2026-10-24 - CentOS refresh validates before it replaces
+
+This supersedes the CentOS parts of "Named lists are replaced from JSON" and "Resolve hostnames outside the firewall" (both 2026-10-14). Debian nftables and ufw are unchanged.
+
+`centos/fwdynhosts.sh` still treats `dynhosts.json` as the whole source list for each zone it names, including sources that were added by hand. It prints every source it will remove. It does not remove anything until every hostname has been resolved or satisfied from last-known-good. A reconcile flag was rejected: the zone is the ownership boundary, and a manual extra is not a second source of truth.
+
+`services`, `ports`, and `target` are optional. When a key is present the live property becomes exactly that set, and an empty array clears it. When the key is absent the live property is left alone, so an old file of `zone`, `ips`, and `hostnames` still only replaces sources. Making services additive was rejected: a removed service would stay open. `target` ACCEPT is rejected on every zone. Allowed values are `default`, `DROP`, and `REJECT`.
+
+DNS keeps every validated A and AAAA from `host -W 5`. Answers that are loopback, link-local, multicast, or unspecified are rejected for that name. Keeping only the first A was rejected because a name with several addresses would be only partly allowed, and because the host firewall is dual-stack. A failed name uses its last-known-good addresses when those exist. If they do not, the run exits before any firewall change. Static `ips` may still be `127.0.0.1`. Static `0.0.0.0/0`, `::/0`, multicast, and unspecified are rejected. Static loopback warns. RFC1918 is not rejected.
+
+The same normalized source in two zones is an error. Normalization is lowercase, strip IPv4 `/32` and IPv6 `/128`, and reject IPv4 leading zeros. Overlapping CIDRs are allowed; firewalld longest-prefix wins. Treating overlap as a conflict was rejected. Removal passes firewall-cmd the exact token it listed. Addition passes the normalized form.
+
+`--refresh-cloudflare` downloads the published v4 and v6 lists, validates them, and prints the CIDR diff. It writes only with `--apply`, and then only the `ips` array of the zone named `cloudflare`, then continues into a normal firewall apply. An invalid feed writes nothing and does not touch firewalld. Cron does not fetch. Storing the feed outside the JSON was rejected: the zone's `ips` array is already the list the apply path reads.
+
+The script uses `set -Eeuo pipefail`, an exclusive lock, a backup taken before the first permanent change, and one `firewall-cmd --reload` only when something changed. `--check`, `--dry-run`, `--apply`, and `--rollback` are the modes. No mode means `--apply` so an existing crontab line keeps working. `--migrate-public-web` is a separate confirmed step that removes `http` and `https` from `public` only after `cloudflare` is already serving that role. It is never part of a normal apply.
+
 ## 2026-10-14 - nft set name falls back to zone
 
 `debian-nft/fwdynhosts.sh` reads `set` and, when that key is absent, `zone`. A missing name is skipped. The string `null` from `jq` was becoming a real set, so a file that only had `zone` never updated `management`.

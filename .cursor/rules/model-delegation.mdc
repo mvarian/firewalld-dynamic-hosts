@@ -4,16 +4,20 @@ alwaysApply: true
 ---
 # Model delegation and cost control
 
-The parent premium model primarily handles architecture, planning, coordination,
-escalation, and final review. Keep ambiguous diagnosis, architectural choices, and
-unresolved design decisions with the parent. Proactively use `implementer` for 
-well-understood, bounded implementation after the approach is settled; task size
-alone is not a reason to delegate. For repetitive, boilerplate, straightforward 
-work, use `mechanical`.  After substantial, architectural, or security-sensitive 
-changes, use `reviewer` for an independent read-only review; the parent evaluates 
-findings before fixes.
+The parent handles architecture, planning, coordination, escalation, and final
+review. Keep ambiguous diagnosis, architectural choices, and unresolved design
+decisions with the parent. Do the implementation through subagents. A longer
+or multi-step request is the signal to delegate. Do not wait for the user to
+say "use subagents" or name a model.
 
-Keep trivial edits local when delegation overhead exceeds the work. Give each agent
+Once the approach for a part is settled, hand that part to `implementer`.
+Hand repetitive, boilerplate, or straightforward parts to `mechanical`. Split
+a long task into those parts and launch the independent ones together. After
+substantial, architectural, or security-sensitive changes, use `reviewer` for
+an independent read-only review; the parent evaluates findings before fixes.
+
+Keep a trivial one-file edit local when starting an agent would dwarf the
+change. Give each agent
 a small, bounded task, relevant paths and context, concrete existing examples to
 follow, acceptance criteria, behaviors to preserve, and required checks. For bug
 fixes, require evidence of the cause before edits, rather than speculative patches.
@@ -27,9 +31,19 @@ Honor user instructions and project-local constraints over these defaults. Agent
 must follow the same security, required-reading, protected-file, and consent rules.
 Delegation never grants permission to commit, push, deploy, or expand scope.
 
-Use the named agents' configured models. If an agent/model is unavailable or Cursor
-reports fallback, surface the limitation; do not silently substitute premium work
-at scale. Model selection is a preference, not a guaranteed spending cap. Keep
-prompts and result summaries focused and verify actual routing in Cursor.
+`implementer` and `mechanical` run on Cursor models (Composer, Grok). On each
+launch, pick the most appropriate Cursor model from that turn's available
+subagent model list for the task, and pass it as `model`. The model in the
+agent file is only a fallback for a launch that omits `model`.
 
-<!-- engineering-profile managed sha256=92998037f6ef833a18f8cb5ff5d2e837227994634c7b8699e0783d76ba44ddbf -->
+Do not use another model family for these two agents. If the model is rejected,
+or the result says the agent ran on a different model, do not keep that result.
+Relaunch on another available Cursor model, or tell the user.
+
+`reviewer` is not a Cursor-model agent. Leave its model as configured unless
+the user names one.
+
+Model selection is a preference, not a guaranteed spending cap. Keep prompts
+and result summaries focused, and verify the model the result reports.
+
+<!-- engineering-profile managed sha256=3be7646cc622ca76acec280d899fd44954df675b758357a35d6c8bd55bc63bd5 -->
