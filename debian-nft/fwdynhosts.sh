@@ -1,65 +1,105 @@
 #!/usr/bin/env bash
+# Refresh nftables set elements from dynhosts.json.
+# The accept rules live in nftables.baseline.conf. This script does not write them.
+set -euo pipefail
 
-configuration=`cat /opt/fwdynhosts/dynhosts.json`
-family="firewall"
+case ":${PATH:-}:" in
+	*:/usr/sbin:*) ;;
+	*) PATH="${PATH:+$PATH:}/usr/sbin:/sbin" ;;
+esac
+export PATH
 
-echo "$configuration" | jq -c -r '.[]' | while read -r item; do	
-	#printf "$item\n\n"
-	nfset=`echo $item | jq -r ".set // .zone // empty"`
-	nfcomment=`echo $item | jq -r ".comment // empty"`
-	if [ -z "$nfset" ]; then
-		echo "No set or zone name, skipping"
-		continue
-	fi
+CONFIG=${FWDYNHOSTS_CONFIG:-/opt/fwdynhosts/dynhosts.json}
+STATE=${FWDYNHOSTS_STATE_DIR:-/var/lib/fwdynhosts}
+family=firewall
 
-	printf "Configuring Set: $nfset $nfcomment\n"
-
-	printf "\nChecking for existing set...\n"
-	# nft list sets ip | grep -E -o "set\ \w*\ {" | grep -E -o "[^set\ ](\w*)[^\ {]"
-	# nft list sets ip | grep -E -o "set\ \w*\ {" | while read -r a; do echo $a | grep -E -o "[^set\ ](\w*)[^\ {]"; done
-	setsearch="set $nfset {"
-	if [[ $(nft list sets ip | grep "$setsearch") ]]; then
-		echo "Set $nfset was found, purging set entries"
-		ip_elements=$(nft list set $family $nfset | awk '/{ /,/}/' | cut -d '=' -f 2)
-		if [[ -n "$ip_elements" ]]; then
-			nft delete element "$family" "$nfset" ${ip_elements}
-		fi
-	else
-		echo "No set $nfset found, creating set"
-		nft add set ip $family $nfset { type ipv4_addr\; comment \"$nfcomment\" \; }
-	fi
-
-	printf "\nSetting new IP sources...\n"
-	ips=`echo $item | jq -r -c ".ips[]"`
-	for ip in ${ips[@]}; do
-		printf "Allowing IP: $ip\n"
-		printf "nft add element ip $family $nfset { $ip }\n"
-		nft add element ip $family $nfset { $ip }
-	done
-
-	printf "\nSetting new Hostname sources...\n"
-	hostnames=`echo $item | jq -r -c ".hostnames[]"`
-	for hostname in ${hostnames[@]}; do
-		hostip=`host $hostname | awk '/has address/ { print $4 }' | head -n1`
-		#hostip=`dig +short hq.nsky.io | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
-		printf "Allowing Hostname: $hostname resolved to $hostip\n"
-		printf "nft add element ip $family $nfset { $hostip }\n"
-		nft add element ip $family $nfset { $hostip }
-	done
-
-	printf "\n"
-
+for cmd in jq nft flock host; do
+	command -v "$cmd" >/dev/null 2>&1 || { printf 'fwdynhosts: %s is missing\n' "$cmd" >&2; exit 1; }
 done
 
-printf "Reloading nftables..."
-cat << "EOF" > /etc/nftables.conf
-#!/usr/sbin/nft -f
-add table ip firewall
-delete table ip firewall
-add table ip6 firewall
-delete table ip6 firewall
-EOF
-nft list table ip firewall >> /etc/nftables.conf
-nft list table ip6 firewall >> /etc/nftables.conf
+mkdir -p "$STATE"
+exec 9>"$STATE/fwdynhosts.lock"
+flock -n 9 || { printf '%s\n' "fwdynhosts: lock busy" >&2; exit 1; }
 
-printf "Done.\n"
+jq -e 'type == "array" and length > 0 and all(.[]; (keys - ["set","zone","comment","ips","hostnames"]) == [] and (.ips | type == "array") and (.hostnames | type == "array"))' "$CONFIG" >/dev/null
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+add_addr() {
+	local addr="$1" dest="$2"
+	case "$addr" in
+		*:*)
+			printf 'fwdynhosts: not an ipv4 address: %s\n' "$addr" >&2
+			exit 1
+			;;
+		''|*[!0-9./]*|*/0|0.0.0.0|0.0.0.0/*)
+			printf 'fwdynhosts: rejected address: %s\n' "$addr" >&2
+			exit 1
+			;;
+	esac
+	printf '%s\n' "$addr" >> "$dest"
+}
+
+while IFS= read -r item; do
+	name=$(printf '%s' "$item" | jq -r '.set // .zone // empty')
+	case "$name" in
+		[A-Za-z]*) ;;
+		*)
+			printf 'fwdynhosts: bad set name: %s\n' "$name" >&2
+			exit 1
+			;;
+	esac
+	case "$name" in
+		*[!A-Za-z0-9_]*)
+			printf 'fwdynhosts: bad set name: %s\n' "$name" >&2
+			exit 1
+			;;
+	esac
+	if [ -e "$work/set.$name" ]; then
+		printf 'fwdynhosts: duplicate set: %s\n' "$name" >&2
+		exit 1
+	fi
+	: > "$work/set.$name"
+	while IFS= read -r addr; do
+		[ -n "$addr" ] || continue
+		add_addr "$addr" "$work/set.$name"
+	done < <(printf '%s' "$item" | jq -r '.ips[]')
+	while IFS= read -r hostname; do
+		[ -n "$hostname" ] || continue
+		if ! host -W 5 "$hostname" > "$work/host.out"; then
+			printf 'fwdynhosts: lookup failed for %s\n' "$hostname" >&2
+			exit 1
+		fi
+		found=0
+		while IFS= read -r addr; do
+			[ -n "$addr" ] || continue
+			add_addr "$addr" "$work/set.$name"
+			found=1
+		done < <(awk '/has address/ { print $4 }' "$work/host.out")
+		if [ "$found" -eq 0 ]; then
+			printf 'fwdynhosts: no address for %s\n' "$hostname" >&2
+			exit 1
+		fi
+	done < <(printf '%s' "$item" | jq -r '.hostnames[]')
+	if [ ! -s "$work/set.$name" ]; then
+		printf 'fwdynhosts: refusing to empty set %s\n' "$name" >&2
+		exit 1
+	fi
+	sort -u "$work/set.$name" -o "$work/set.$name"
+done < <(jq -c '.[]' "$CONFIG")
+
+{
+	for f in "$work"/set.*; do
+		name=$(basename "$f")
+		name=${name#set.}
+		printf 'flush set ip %s %s\n' "$family" "$name"
+		list=$(paste -sd, "$f" | sed 's/,/, /g')
+		printf 'add element ip %s %s { %s }\n' "$family" "$name" "$list"
+	done
+} > "$work/tx.nft"
+
+printf 'nft -f %s\n' "$work/tx.nft"
+cat "$work/tx.nft"
+nft -f "$work/tx.nft"
+printf '%s\n' "Done."

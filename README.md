@@ -9,31 +9,29 @@ Internal servers should accept SSH only from addresses we treat as trusted. Some
 Three variants:
 
 - CentOS / firewalld (`centos/fwdynhosts.sh`) replaces the sources on each zone named in the config, and replaces services, ports, or target only when that key is present.
-- Debian / nftables (`debian-nft/fwdynhosts.sh`) replaces the elements of each named set in the nftables table `firewall`.
+- Debian / nftables (`debian-nft/fwdynhosts.sh`) replaces the elements of each named set in the nftables table `firewall`. The accept rules are `nftables.baseline.conf`, installed by hand. The script does not write that file.
 - Debian / ufw (`debian-ufw/fwdynhosts.sh`) writes one ufw rule list per named zone. `zones.json` is the zone's ports and protocols. `dynhosts.json` is who may use that zone.
 
-On firewalld, services, ports, and target stay as they are unless the config lists that key. On nftables, you create the set and the rules that accept traffic from it; the script only refreshes who is in the set. UFW has no zones, so `zones.json` is that policy and the script writes an allow for each dynhosts address. Each run replaces the whole list it owns. Firewalld zones, nftables sets, and ufw rules whose comment is not one of the named zones are left alone. A DNS change takes effect on the next cron run. The install sections below schedule that cron hourly.
+On firewalld, services, ports, and target stay as they are unless the config lists that key. On nftables, the rules file is the policy and the JSON is who may use the `management` set. UFW has no zones, so `zones.json` is that policy and the script writes an allow for each dynhosts address. Each run replaces the whole list it owns. Firewalld zones, nftables sets, and ufw rules whose comment is not one of the named zones are left alone. A DNS change takes effect on the next cron run. The install sections below schedule that cron hourly.
 
 Each script reads `/opt/fwdynhosts/dynhosts.json`. The ufw script also reads `/opt/fwdynhosts/zones.json`. Copy the matching example and edit it on the host. Do not commit the live dynhosts file.
 
 ## Debian Installation for nftables
 
-This assumes an ipv4 nftables table named `firewall`. That name is `family="firewall"` at the top of `debian-nft/fwdynhosts.sh`. Set names come from the JSON.
+Two files. `nftables.baseline.conf` is the firewall: input drop, forward drop, output accept. SSH (22), UniFi (8443), and UniFi OS (11443) accept only from the `management` set. Device inform (8080), STUN (3478), and syslog (5514) accept on IPv4. IPv6 input stays drop. `dynhosts.json` is the addresses in each set. The script replaces those IPv4 elements. It does not write `/etc/nftables.conf`.
 
-The following is a sample set of firewall rules that will use a set named "management":
+Copy the baseline to `/etc/nftables.conf` once and load it with `nft -f /etc/nftables.conf`. Put NOMS `172.234.29.145` in the live `management` ips. The example addresses are placeholders.
 
-`nft add set ip firewall management { type ipv4_addr\; comment \"allowed management hosts\" \; }`
-`nft add rule ip firewall input ip saddr @management icmp type { echo-request } counter accept`
-`nft add rule ip firewall input ip saddr @management tcp dport ssh accept`
+A lookup that returns no address exits before `nft` runs, so the set already loaded stays. An empty address list is not flushed. `0.0.0.0/0` is rejected. Writing this repository did not modify a host.
 
-- Add `debian-nft/fwdynhosts.sh` and `debian-nft/dynhosts.json` (using dynhosts.json.example as template) to the Debian host in `/opt/fwdynhosts/`.
-- `sudo su`
+- Add `debian-nft/fwdynhosts.sh` and `debian-nft/dynhosts.json` (from dynhosts.json.example) to `/opt/fwdynhosts/`.
+- Copy `debian-nft/nftables.baseline.conf` to `/etc/nftables.conf` and load it once.
 - `chmod 700 -R /opt/fwdynhosts/*`
 - `chown root:root -R /opt/fwdynhosts/*`
+- `apt-get update && apt-get install jq nftables util-linux`
+- Install `bind9-host` or `bind9-dnsutils` so `host` is on `PATH`.
 - `crontab -e`
-- `apt-get update && apt-get install jq`
-- Install a package that provides the `host` command. The script resolves hostnames with `host`.
-- Add entry to refresh rules every hour: `0 * * * * /opt/fwdynhosts/fwdynhosts.sh`
+- `0 * * * * /opt/fwdynhosts/fwdynhosts.sh`
 
 
 ## Debian Installation for ufw
@@ -107,6 +105,6 @@ An RMM check should run:
 
 ## Configuration and Usage
 
-- Edit dynhosts.json to add the IPs and hostnames you want allowed in each zone/set, adding whatever zones/sets you need. On ufw, use the same zone name in `zones.json` for that zone's ports. Use `0.0.0.0/0` as an address when the zone is open to any IPv4 address.
+- Edit dynhosts.json to add the IPs and hostnames you want allowed in each zone/set, adding whatever zones/sets you need. On ufw, use the same zone name in `zones.json` for that zone's ports. Use `0.0.0.0/0` as an address when a ufw zone is open to any IPv4 address. Debian nftables rejects `0.0.0.0/0`.
 - Any zones/sets not listed in the configuration will be untouched. On ufw, that includes rules whose comment is not a zone named in `dynhosts.json`.
-- Any zones/sets listed in the configuration will have their allowed sources **completely replaced** by what is configured in the json file. Be sure to add everything you want allowed for the zone/set into the config. On ufw, the same replacement applies to every rule commented with that zone name.
+- Any zones/sets listed in the configuration will have their allowed sources **completely replaced** by what is configured in the json file. Be sure to add everything you want allowed for the zone/set into the config. On CentOS and ufw, an empty list clears that zone. On Debian nftables, an empty list exits before nft and leaves the set as it is. On ufw, the same replacement applies to every rule commented with that zone name.
