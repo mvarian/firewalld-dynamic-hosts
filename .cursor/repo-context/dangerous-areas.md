@@ -6,7 +6,7 @@ Threat model for this tree: the attacker who matters is anyone who can change DN
 
 ## Replacing a named zone or set
 
-`centos/fwdynhosts.sh` replaces every source on each zone named in the JSON, including sources added by hand. It prints those removals. DNS runs first. A hostname that fails with no last-known-good stops the run before any firewall change, so a lookup failure does not empty the zone. An empty `ips` and `hostnames` list still clears that zone's sources. Optional `services`, `ports`, and `target` replace that property only when the key is present. The script copies zone XML aside before the first permanent change and restores it if the run does not finish. firewalld still writes permanent changes before the single reload, so a SIGKILL during `firewall-cmd` can leave one XML file partial until the next run restores the backup.
+`centos/fwdynhosts.sh` replaces every source on each zone named in the JSON, including sources added by hand. DNS runs first. A failed lookup stops the run before any firewall change, so a lookup failure does not empty the zone. An empty `ips` and `hostnames` list still clears that zone's sources. Optional `services`, `ports`, and `target` replace that property only when the key is present. New entries are added before stale ones are removed, so a run that stops partway leaves more access, not less. Permanent changes take effect at the single reload.
 
 `debian-nft/fwdynhosts.sh` replaces a named IPv4 set in one `nft -f` transaction (`flush set` then `add element`) after the full desired list is valid. It does not write `/etc/nftables.conf`. An empty list, or a lookup that returns no address, exits before nft and leaves the set as it is. Do not put the old family-less purge back.
 
@@ -18,15 +18,15 @@ Do not change "replace the whole list" into a merge inside either script. That c
 
 ## Hostname to address
 
-CentOS trusts every validated A and AAAA from `host -W 5` that is not loopback, link-local, multicast, or unspecified. Debian nftables keeps every A record and exits before nft when a lookup fails. UFW still trusts the first A record `host` prints, and drops the rest. DNS for those names is a trust boundary. A wrong or extra name in JSON becomes a trusted source on the next run.
+CentOS trusts every A and AAAA from `host -W 5`. Debian nftables keeps every A record and exits before nft when a lookup fails. UFW still trusts the first A record `host` prints, and drops the rest. DNS for those names is a trust boundary. A wrong or extra name in JSON becomes a trusted source on the next run.
 
 CentOS passes zone names and addresses to `firewall-cmd` as quoted arguments. Debian nftables writes set changes into an nft script and runs `nft -f`. It does not expand braces on the shell command line, and it does not interpolate the JSON `comment` into an nft command. UFW still expands the zone name and the address into `ufw` commands. Do not put unquoted `{ ... }` back on the nftables path.
 
 ## What not to add to the refresh path
 
-- CentOS sets services, ports, and target only when those keys are present in the JSON. It rejects `ssh`, `22/tcp`, and `22/udp` on zones named `public` or `cloudflare`, and it rejects target `ACCEPT` on every zone. It does not bind interfaces. Debian nftables refresh does not generate accept rules. Those rules are `nftables.baseline.conf`. Do not open 22, 8443, or 11443 to `0.0.0.0/0` or `::/0`. The ufw script writes the named zone's port rules because UFW has no zone object.
+- CentOS sets services, ports, and target only when those keys are present in the JSON. It rejects `ssh`, `22/tcp`, and `22/udp` on zones named `public` or `cloudflare`, and it rejects target `ACCEPT` on every zone. It does not bind interfaces. Debian nftables refresh does not generate accept rules. Those rules are each server's hand-written `/etc/nftables.conf`. Do not open 22, 8443, or 11443 to `0.0.0.0/0` or `::/0`. The ufw script writes the named zone's port rules because UFW has no zone object.
 - CentOS resolves A and AAAA. Debian nftables and UFW stay on A records.
-- CentOS restores its backup when a change does not finish. Debian nftables does not call nft when a lookup fails, and it does not print `Done.` on that failure. UFW still prints the command and runs it without that recovery.
+- CentOS and Debian nftables do not change the firewall when a lookup fails, and do not print `Done.` on a failure. UFW still prints the command and runs it without that recovery.
 
 ## UFW zone comment
 

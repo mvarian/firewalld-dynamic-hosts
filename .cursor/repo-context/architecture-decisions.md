@@ -6,6 +6,14 @@ Format: newest entry on top, heading `## YYYY-MM-DD - <short title>`. Each entry
 what was decided, what alternative was rejected, and why. Entries are never rewritten — a
 superseded decision gets a new entry that references the old one.
 
+## 2026-11-06 - Servers keep their own nftables.conf
+
+`nftables.baseline.conf` is renamed `nftables.conf.example` and is no longer an install step. Each server's `/etc/nftables.conf` is written by hand and holds server-specific rules this repo does not know. Copying a repo file over it would remove them. This supersedes the "short rules file" install in "The script only updates sets" (2026-11-06).
+
+## 2026-11-06 - CentOS back to a short refresh
+
+`centos/fwdynhosts.sh` was cut from 2322 lines to one apply path for the same reason as Debian nftables. It keeps `services`, `ports`, `target`, the ACCEPT and public/cloudflare SSH guards, and `--refresh-cloudflare`. It resolves every hostname before any `firewall-cmd` change and exits on a failed lookup. It adds new sources before removing stale ones and reloads once only when something changed. Modes, `--status` and `status.json`, the JSON log, last-known-good, zone XML backups, the SSH coverage check, and `--migrate-public-web` were removed. This supersedes "CentOS run status for RMM" (2026-10-24) and the backup and last-known-good parts of "CentOS refresh validates before it replaces" (2026-10-24).
+
 ## 2026-11-06 - The script only updates sets
 
 The policy compiler, schema, exception flags, deploy wrappers, and rollback timer are rejected. The firewall is a short rules file: default drop, and accept for a few services from named sets. `dynhosts.json` stays the original array of `set`, `ips`, and `hostnames`. `debian-nft/fwdynhosts.sh` replaces elements in the IPv4 sets and does not write `/etc/nftables.conf`. The empty-firewall incident was that write. A failed lookup exits before `nft`. An empty list is refused for every set. Duplicate set names are an error. Every A record is kept. `0.0.0.0/0` is rejected. `/usr/sbin` is appended to `PATH` so cron can find `nft`. The IPv6 table stays drop and has no management set, because the script does not fill one. This supersedes the 2026-11-06 entries below that grew a second policy engine.

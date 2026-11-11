@@ -1,4 +1,5 @@
 #!/usr/sbin/nft -f
+# Example only. Do not copy over a configured server's /etc/nftables.conf.
 add table ip firewall
 delete table ip firewall
 add table ip6 firewall

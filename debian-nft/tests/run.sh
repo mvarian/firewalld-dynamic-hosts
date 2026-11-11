@@ -143,16 +143,6 @@ else
 	fail "empty set is not flushed"
 fi
 
-if grep -q 'policy drop' "$ROOT/debian-nft/nftables.baseline.conf" \
-	&& grep -q 'tcp dport 22' "$ROOT/debian-nft/nftables.baseline.conf" \
-	&& grep -q '@management' "$ROOT/debian-nft/nftables.baseline.conf" \
-	&& grep -q 'tcp dport 8080' "$ROOT/debian-nft/nftables.baseline.conf" \
-	&& ! grep -q 'flush ruleset' "$ROOT/debian-nft/nftables.baseline.conf"; then
-	pass "rules file is default drop and the named accepts"
-else
-	fail "rules file is default drop and the named accepts"
-fi
-
 if [ "$FAILS" -ne 0 ]; then
 	printf '%s\n' "$FAILS failed" >&2
 	exit 1

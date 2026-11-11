@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Refresh nftables set elements from dynhosts.json.
-# The accept rules live in nftables.baseline.conf. This script does not write them.
+# The accept rules live in the host's own /etc/nftables.conf. This script does not write them.
 set -euo pipefail
 
 case ":${PATH:-}:" in
